@@ -1,0 +1,30 @@
+{
+    "name": "BlockBlog\Drivers\Mysql",
+    "description": "BlockBlog MySQL Library",
+    "homepage": "",
+    "type": "library",
+    "keywords": [
+        "db",
+        "pdo",
+        "mysql",
+        "manager"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Mateusz Bochen",
+            "email": "",
+            "role": "developer"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=5.3",
+        "ext-pdo": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "BlockBlog\\": "lib/"
+        }
+    }
+}

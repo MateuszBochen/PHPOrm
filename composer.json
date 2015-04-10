@@ -1,5 +1,5 @@
 {
-    "name": "BlockBlog\Drivers\Mysql",
+    "name": "BlockBlog\\Drivers\\Mysql",
     "description": "BlockBlog MySQL Library",
     "homepage": "",
     "type": "library",
@@ -7,7 +7,7 @@
         "db",
         "pdo",
         "mysql",
-        "manager"
+        "ORM"
     ],
     "license": "MIT",
     "authors": [

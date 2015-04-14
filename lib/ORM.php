@@ -8,6 +8,7 @@ class ORM
 {
 
     private $pdo;
+    private $prefix;
     private $orderByString;
     private $tableName;
     private $entityClass;
@@ -16,6 +17,7 @@ class ORM
     public function __construct(Mysql $mysqlClass)
     {
         $this->pdo = $mysqlClass->getPdo();
+        $this->prefix = $mysqlClass->getPrefix();
     }
 
     public function setEntity($entityClass)
@@ -31,7 +33,7 @@ class ORM
         }
 
         $this->tableName = $this->getTableName($this->entityClassString);
-        $this->tableName = $this->transformToUnderscore($this->tableName, true);
+        $this->tableName = $this->prefix.$this->transformToUnderscore($this->tableName, true);
 
         return $this;
     }
@@ -92,17 +94,15 @@ class ORM
         return 'WHERE '.implode(' AND ', $whereColumns);
     }
 
-    private function getVars()
+    private function prepareSelect($properties)
     {
-        $properties = [];
+        $columns = [];
 
-        $reflect = new \ReflectionObject($this->entityClass);
-
-        foreach ($reflect->getProperties(\ReflectionProperty::IS_PUBLIC + \ReflectionProperty::IS_PROTECTED) as $property) {
-            $properties[] = $property->name;
+        foreach ($properties as $property) {
+            $columns[] = "`{$this->transformToUnderscore($property)}` as `{$property}`";
         }
 
-        return $properties;
+        return implode(', ', $columns);
     }
 
     private function getTableName($className)
@@ -130,14 +130,16 @@ class ORM
         );
     }
 
-    private function prepareSelect($properties)
+    private function getVars()
     {
-        $columns = [];
+        $properties = [];
 
-        foreach ($properties as $property) {
-            $columns[] = "`{$this->transformToUnderscore($property)}` as `{$property}`";
+        $reflect = new \ReflectionObject($this->entityClass);
+
+        foreach ($reflect->getProperties(\ReflectionProperty::IS_PROTECTED) as $property) {
+            $properties[] = $property->name;
         }
 
-        return implode(', ', $columns);
+        return $properties;
     }
 }

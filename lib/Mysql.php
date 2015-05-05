@@ -33,23 +33,14 @@ class Mysql
         return $this->prefix;
     }
 
-    public function query($query)
+    public function update($tableName, array $array, array $conditions)
     {
-        $this->query = $this->pdo->prepare($query);
+        $conditions = $this->prepareConditions($conditions);
+        $values = $this->prepareValuesToUpdate($array);
 
-        return $this;
-    }
+        $query = "UPDATE `{$tableName}` SET {$values} WHERE $conditions LIMIT 1";
 
-    public function get()
-    {
-        $this->query->execute();
-
-        return $this->query->fetchAll(\PDO::FETCH_ASSOC);
-    }
-
-    public function exec()
-    {
-        return $this->query->execute();
+        $this->query($query)->exec();
     }
 
     public function insert($tableName, array $array)
@@ -86,6 +77,27 @@ class Mysql
         return $this->pdo->lastInsertId();
     }
 
+    public function query($query)
+    {
+        echo $query."\n";
+
+        $this->query = $this->pdo->prepare($query);
+
+        return $this;
+    }
+
+    public function get()
+    {
+        $this->query->execute();
+
+        return $this->query->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function exec()
+    {
+        return $this->query->execute();
+    }
+
     private function prepareValuesToInsert(array $array)
     {
         array_walk($array, function(&$val, $column){
@@ -101,5 +113,26 @@ class Mysql
     private function prepareColumnsToInsert()
     {
         return '('.implode(', ', $this->insertColumns).')';
+    }
+
+    private function prepareValuesToUpdate(array $array)
+    {
+        return implode(', ', $this->makeArrayColumnToValue($array));
+    }
+
+    public function prepareConditions(array $array)
+    {
+        return implode(' AND ', $this->makeArrayColumnToValue($array)); 
+    }
+
+    private function makeArrayColumnToValue($array)
+    {
+        $tmp = [];
+
+        foreach ($array as $column => $val) {
+            $tmp[] = "`$column` = '{$val}'";
+        }
+
+        return $tmp;
     }
 }

@@ -6,13 +6,7 @@ use BlockBlog\Mysql;
 use BlockBlog\Repository\Repository;
 
 class ORM
-{
-    private $pdo;
-    private $prefix;
-    private $orderByString;
-    private $tableName;
-    private $entityClass;
-    private $entityClassString;
+{   
     private $mysqlClass;
 
     public function __construct(Mysql $mysqlClass)

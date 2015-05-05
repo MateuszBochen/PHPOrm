@@ -3,6 +3,7 @@
 namespace BlockBlog\Repository;
 
 use BlockBlog\Mysql;
+use BlockBlog\Repository\RepositoryException;
 
 class Repository extends BaseRepository
 {
@@ -34,7 +35,7 @@ class Repository extends BaseRepository
             return call_user_func_array(array($this->repositoryClass, $method), $args);   
         }
         else {
-            trigger_error('Unknown function '.get_class($this->repositoryClass).':'.$method, E_USER_ERROR);
+           new RepositoryException('Unknown function '.get_class($this->repositoryClass).':'.$method, E_USER_ERROR);
         }
     }
 
@@ -59,7 +60,7 @@ class Repository extends BaseRepository
             $where = $this->prepareWhere($conditions);
         }
 
-        $select = $this->prepareSelect($this->getVars());
+        $select = $this->prepareSelect($this->getVars($this->entityClass));
 
         $query = "SELECT {$select} FROM `{$this->tableName}` {$where} {$this->orderByString}LIMIT {$start}, {$limit}";
         $query = $this->pdo->prepare($query);
@@ -74,7 +75,7 @@ class Repository extends BaseRepository
     {
         $where = $this->prepareWhere($conditions);
 
-        $select = $this->prepareSelect($this->getVars());
+        $select = $this->prepareSelect($this->getVars($this->entityClass));
 
         $query = "SELECT {$select} FROM `{$this->tableName}` {$where} LIMIT 1";
         $query = $this->pdo->prepare($query);
@@ -95,7 +96,7 @@ class Repository extends BaseRepository
         }
 
         $this->tableName = $this->getTableName($this->entityClassString);
-        $this->tableName = $this->prefix.$this->transformToUnderscore($this->tableName, true);
+        $this->tableName = $this->prefix.$this->tableName;
     }
 
     private function prepareWhere(array $conditions)
@@ -118,18 +119,5 @@ class Repository extends BaseRepository
         }
 
         return implode(', ', $columns);
-    }
-
-    private function getVars()
-    {
-        $properties = [];
-
-        $reflect = new \ReflectionObject($this->entityClass);
-
-        foreach ($reflect->getProperties(\ReflectionProperty::IS_PROTECTED) as $property) {
-            $properties[] = $property->name;
-        }
-
-        return $properties;
     }
 }

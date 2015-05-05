@@ -17,9 +17,13 @@ class BaseRepository
 
     protected function getTableName($className)
     {
+        if (is_object($className)) {
+           $className = get_class($className); 
+        }
+
         $array = explode('\\', $className);
 
-        return end($array);
+        return $this->transformToUnderscore(end($array), true);
     }
 
     protected function transformToUnderscore($string, $plural = false)
@@ -38,5 +42,18 @@ class BaseRepository
             },
             $string
         );
+    }
+
+    protected function getVars($entity)
+    {
+        $properties = [];
+
+        $reflect = new \ReflectionObject($entity);
+
+        foreach ($reflect->getProperties(\ReflectionProperty::IS_PROTECTED) as $property) {
+            $properties[] = $property->name;
+        }
+
+        return $properties;
     }
 }

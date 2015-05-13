@@ -20,6 +20,8 @@ class Mysql
         
         $this->pdo = new \PDO($dns, $configs['user'], $configs['password']);
         
+        $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
         $this->prefix = $configs['prefix'];
     }
 
@@ -35,6 +37,7 @@ class Mysql
 
     public function update($tableName, array $array, array $conditions)
     {
+        $tableName = $this->prefix.$tableName;
         $conditions = $this->prepareConditions($conditions);
         $values = $this->prepareValuesToUpdate($array);
 
@@ -46,7 +49,7 @@ class Mysql
     public function insert($tableName, array $array)
     {
         $tableName = $this->prefix.$tableName;
-        $values ;
+        $values = [];
         $columns = '';
         $this->insertColumns = null;
         $this->addingToColumnsList = true;
@@ -79,8 +82,6 @@ class Mysql
 
     public function query($query)
     {
-        echo $query."\n";
-
         $this->query = $this->pdo->prepare($query);
 
         return $this;

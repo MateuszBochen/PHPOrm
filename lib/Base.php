@@ -1,12 +1,13 @@
 <?php
 
-namespace BlockBlog\Repository;
+namespace BlockBlog;
 
-class BaseRepository
+class Base
 {
     protected $mysqlClass;
     protected $pdo;
     protected $prefix;
+    protected $entityClassString;
 
     public function __construct($mysqlClass)
     {
@@ -21,9 +22,34 @@ class BaseRepository
            $className = get_class($className); 
         }
 
+        $this->entityClassString = $className;
         $array = explode('\\', $className);
 
-        return $this->transformToUnderscore(end($array), true);
+        return $this->prefix.$this->transformToUnderscore(end($array), true);
+    }
+
+    protected function getVars($entity)
+    {
+        $properties = [];
+
+        $reflect = new \ReflectionObject($entity);
+
+        foreach ($reflect->getProperties(\ReflectionProperty::IS_PROTECTED) as $property) {
+            $properties[] = $property->name;
+        }
+
+        return $properties;
+    }
+
+    protected function prepareSelect($properties)
+    {
+        $columns = [];
+
+        foreach ($properties as $property) {
+            $columns[] = "`{$this->transformToUnderscore($property)}` as `{$property}`";
+        }
+
+        return implode(', ', $columns);
     }
 
     protected function transformToUnderscore($string, $plural = false)
@@ -42,18 +68,5 @@ class BaseRepository
             },
             $string
         );
-    }
-
-    protected function getVars($entity)
-    {
-        $properties = [];
-
-        $reflect = new \ReflectionObject($entity);
-
-        foreach ($reflect->getProperties(\ReflectionProperty::IS_PROTECTED) as $property) {
-            $properties[] = $property->name;
-        }
-
-        return $properties;
     }
 }

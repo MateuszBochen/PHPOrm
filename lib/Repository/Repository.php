@@ -3,15 +3,15 @@
 namespace BlockBlog\Repository;
 
 use BlockBlog\Mysql;
+use BlockBlog\Base;
 use BlockBlog\Repository\RepositoryException;
+use BlockBlog\QueryBuilder\QueryBuilder;
 
-class Repository extends BaseRepository
+class Repository extends Base
 {
-
     private $entityClass;
     
     private $tableName;
-    private $entityClassString;
     private $orderByString;
     private $repositoryClass;
 
@@ -25,17 +25,19 @@ class Repository extends BaseRepository
         $repositoryClassString = $this->entityClassString.'Repository';
 
         if (class_exists($repositoryClassString)) {
-            $this->repositoryClass = new $repositoryClassString($mysqlClass);
+            $queryBuilder = new QueryBuilder($mysqlClass);
+            $queryBuilder->from($entityClass);
+            $this->repositoryClass = new $repositoryClassString($queryBuilder);
         }
     }
 
-    public function __call($method, $args) {
-
+    public function __call($method, $args) 
+    {
         if ($this->repositoryClass && method_exists($this->repositoryClass, $method)) {
-            return call_user_func_array(array($this->repositoryClass, $method), $args);   
+            return call_user_func_array(array($this->repositoryClass, $method), $args);
         }
         else {
-           new RepositoryException('Unknown function '.get_class($this->repositoryClass).':'.$method, E_USER_ERROR);
+           new RepositoryException('Unknown function '.get_class($this->repositoryClass).':'.$method);
         }
     }
 
@@ -96,7 +98,7 @@ class Repository extends BaseRepository
         }
 
         $this->tableName = $this->getTableName($this->entityClassString);
-        $this->tableName = $this->prefix.$this->tableName;
+        $this->tableName = $this->tableName;
     }
 
     private function prepareWhere(array $conditions)
@@ -108,16 +110,5 @@ class Repository extends BaseRepository
         }
 
         return 'WHERE '.implode(' AND ', $whereColumns);
-    }
-
-    private function prepareSelect($properties)
-    {
-        $columns = [];
-
-        foreach ($properties as $property) {
-            $columns[] = "`{$this->transformToUnderscore($property)}` as `{$property}`";
-        }
-
-        return implode(', ', $columns);
     }
 }

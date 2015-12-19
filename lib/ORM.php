@@ -62,11 +62,14 @@ class ORM extends Base
         foreach($this->collection as $entity) {
             $tableName = '';
             if (method_exists($entity, 'getId')) {
-                $tableName = $thid->getTableName($entity);
+                $tableName = $this->getTableName($entity);
                 $id = $entity->getId();
 
-                $mysqlClass->query("DELETE FROM `$tableName` WHERE `id` = '$id' LIMIT 1");
-                $mysqlClass->exec();
+                $this->mysqlClass->query("DELETE FROM `$tableName` WHERE `id` = '$id' LIMIT 1");
+                $this->mysqlClass->exec();
+            }
+            else {
+                throw new \Exception("no get id IN ORM KLASS", 1);
             }
         }
 

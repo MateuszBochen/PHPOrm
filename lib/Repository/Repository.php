@@ -10,10 +10,11 @@ use BlockBlog\QueryBuilder\QueryBuilder;
 class Repository extends Base
 {
     private $entityClass;
-    
+
     private $tableName;
     private $orderByString;
     private $repositoryClass;
+    private $allRecordsForLastFindAll = 0;
 
     public function __construct(Mysql $mysqlClass, $entityClass)
     {
@@ -37,7 +38,7 @@ class Repository extends Base
             return call_user_func_array(array($this->repositoryClass, $method), $args);
         }
         else {
-           new RepositoryException('Unknown function '.get_class($this->repositoryClass).':'.$method);
+           throw new RepositoryException('Unknown function '.get_class($this->repositoryClass).':'.$method);
         }
     }
 
@@ -65,12 +66,29 @@ class Repository extends Base
         $select = $this->prepareSelect($this->getVars($this->entityClass));
 
         $query = "SELECT {$select} FROM `{$this->tableName}` {$where} {$this->orderByString}LIMIT {$start}, {$limit}";
+        $this->mysqlClass->addToQueryLog($query);
+
         $query = $this->pdo->prepare($query);
         $query->execute();
 
         $this->orderByString = '';
 
-        return $query->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, $this->entityClassString);
+        $toReturn = $query->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, $this->entityClassString);
+
+        $query = "SELECT COUNT(*) as `count` FROM `{$this->tableName}` {$where} {$this->orderByString}";
+        $this->mysqlClass->addToQueryLog($query);
+
+        $query = $this->pdo->prepare($query);
+        $query->execute();
+        $allRecordsForLastFindAll = $query->fetchAll(\PDO::FETCH_ASSOC);
+        $this->allRecordsForLastFindAll = $allRecordsForLastFindAll[0]['count'];
+
+        return $toReturn;
+    }
+
+    public function countAll()
+    {
+        return $this->allRecordsForLastFindAll;
     }
 
     public function findOneBy(array $conditions)
@@ -80,6 +98,8 @@ class Repository extends Base
         $select = $this->prepareSelect($this->getVars($this->entityClass));
 
         $query = "SELECT {$select} FROM `{$this->tableName}` {$where} LIMIT 1";
+        $this->mysqlClass->addToQueryLog($query);
+
         $query = $this->pdo->prepare($query);
         $query->execute();
 

@@ -158,6 +158,7 @@ class QueryBuilder extends Base
         }
 
         $query = "SELECT {$select} FROM `{$this->tableName}` {$this->prepareWhere()} {$this->limit} ";
+        $this->mysqlClass->addToQueryLog($query);
 
         $query = $this->pdo->prepare($query);
         $query->execute();
@@ -173,6 +174,7 @@ class QueryBuilder extends Base
     private function execUpdate()
     {
         $query = "UPDATE `{$this->tableName}` SET {$this->prepareUpdate()} {$this->prepareWhere()} {$this->limit}";
+        $this->mysqlClass->addToQueryLog($query);
 
         $query = $this->pdo->prepare($query);
 
@@ -182,6 +184,7 @@ class QueryBuilder extends Base
     private function execDelete()
     {
         $query = "DELETE FROM `{$this->tableName}` {$this->prepareWhere()} {$this->limit}";
+        $this->mysqlClass->addToQueryLog($query);
 
         return $this->pdo->exec($query);
     }

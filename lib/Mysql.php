@@ -9,17 +9,18 @@ class Mysql
     private $prefix;
     private $insertColumns;
     private $addingToColumnsList = true;
+    private $queriesLog = [];
 
     public function __construct($configs)
     {
         $dns = 'mysql:host='.$configs['host'];
         $dns .= (isset($configs['port']) && $configs['port'] ? ';port='.$configs['port'] : '');
-        
+
         $dns .= ';dbname='.$configs['databaseName'];
         $dns .= ';charset='.$configs['charset'];
-        
+
         $this->pdo = new \PDO($dns, $configs['user'], $configs['password']);
-        
+
         $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
         $this->prefix = $configs['prefix'];
@@ -37,18 +38,25 @@ class Mysql
 
     public function update($tableName, array $array, array $conditions)
     {
-        $tableName = $this->prefix.$tableName;
+        if (!preg_match("/^{$this->prefix}[a-z0-9]+/", $tableName)) {
+            $tableName = $this->prefix.$tableName;
+        }
+
         $conditions = $this->prepareConditions($conditions);
         $values = $this->prepareValuesToUpdate($array);
 
         $query = "UPDATE `{$tableName}` SET {$values} WHERE $conditions LIMIT 1";
+        $this->queriesLog[] = $query;
 
         $this->query($query)->exec();
     }
 
     public function insert($tableName, array $array)
     {
-        $tableName = $this->prefix.$tableName;
+        if (!preg_match("/^{$this->prefix}[a-z0-9]+/", $tableName)) {
+            $tableName = $this->prefix.$tableName;
+        }
+
         $values = [];
         $columns = '';
         $this->insertColumns = null;
@@ -67,7 +75,6 @@ class Mysql
         }
 
         $columns = $this->prepareColumnsToInsert();
-
         $query = "INSERT INTO `{$tableName}` {$columns} VALUES {$values}";
 
         $this->query($query)->exec();
@@ -82,6 +89,7 @@ class Mysql
 
     public function query($query)
     {
+        $this->queriesLog[] = $query;
         $this->query = $this->pdo->prepare($query);
 
         return $this;
@@ -94,18 +102,36 @@ class Mysql
         return $this->query->fetchAll(\PDO::FETCH_ASSOC);
     }
 
+    public function getQueriesLog()
+    {
+        return $this->queriesLog;
+    }
+
+    public function addToQueryLog($query)
+    {
+        $this->queriesLog[] = $query;
+
+        return $this;
+    }
+
     public function exec()
     {
-        return $this->query->execute();
+        try {
+            return $this->query->execute();
+        }
+        catch(\PDOException $e) {
+            throw new MysqlException($e->getMessage(), $this->getQueriesLog());
+        }
     }
 
     private function prepareValuesToInsert(array $array)
     {
         array_walk($array, function(&$val, $column){
+            $val = addslashes($val);
             $val = "'{$val}'";
             if ($this->addingToColumnsList) {
                 $this->insertColumns[] = "`{$column}`";
-            } 
+            }
         });
 
         return '('.implode(', ', $array).')';
@@ -131,6 +157,7 @@ class Mysql
         $tmp = [];
 
         foreach ($array as $column => $val) {
+            $val = addslashes($val);
             $tmp[] = "`$column` = '{$val}'";
         }
 
